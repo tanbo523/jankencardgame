@@ -148,7 +148,7 @@ const BattlePage = () => {
       {/* Loading表示 */}
       {isImageLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl text-2xl font-bold">Loading...</div>
+          <div className="bg-white p-8 rounded-lg shadow-xl text-2xl font-bold">バトルスタート！</div>
         </div>
       )}
       {/* Opponent Area */}
