@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Hand from '@/components/Hand';
 import { CardType, DeckType, JankenHand } from '@/types';
 import imageCompression from 'browser-image-compression';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 const createDummyDeck = (): DeckType => {
   const hands: JankenHand[] = ['fire', 'water', 'grass'];
@@ -22,6 +22,8 @@ export default function DeckBuilderPage() {
   const [myHand, setMyHand] = useState<DeckType>(createDummyDeck());
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isOnlineMode = searchParams.get('mode') === 'online';
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,7 +84,11 @@ export default function DeckBuilderPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('janken_deck', JSON.stringify(myHand));
     }
-    router.push('/battle');
+    if (isOnlineMode) {
+      router.push('/online');
+    } else {
+      router.push('/battle');
+    }
   };
 
   return (
@@ -97,7 +103,7 @@ export default function DeckBuilderPage() {
         onClick={handleGoToBattle}
         className="mt-8 bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-lg"
       >
-        このデッキで対戦
+        {isOnlineMode ? 'オンライン対戦に進む' : 'このデッキで対戦'}
       </button>
 
       {editingCard && (

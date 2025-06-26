@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
 import Hand from '@/components/Hand';
 import Card from '@/components/Card';
 import CardBack from '@/components/CardBack';
@@ -30,6 +32,14 @@ const createDummyDeck = (): DeckType => {
 };
 
 const BattlePage = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Online mode state
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const isOnline = searchParams.get('online') === 'true';
+  const roomId = searchParams.get('room');
+
   const [playerHand, setPlayerHand] = useState<DeckType>([]);
   const [opponentHand, setOpponentHand] = useState<DeckType>(createDummyDeck());
   const [selectedCard, setSelectedCard] = useState<CardType | null>(null);
@@ -44,23 +54,54 @@ const BattlePage = () => {
   const battleTimeout = useRef<NodeJS.Timeout | null>(null);
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
 
-  // デッキ初期化
+  // Deck initialization & Online connection
   useEffect(() => {
+    // 1. Deck initialization from localStorage
+    let initialPlayerHand: DeckType = [];
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('janken_deck');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPlayerHand(parsed);
-            return;
+            initialPlayerHand = parsed;
+            setPlayerHand(initialPlayerHand);
           }
         } catch {}
       }
     }
-    setPlayerHand(createDummyDeck());
-  }, []);
+    if (initialPlayerHand.length === 0) {
+      initialPlayerHand = createDummyDeck();
+      setPlayerHand(initialPlayerHand);
+    }
+
+    // 2. Online mode connection
+    if (isOnline && roomId) {
+      const newSocket = io('http://localhost:3002');
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
+        console.log('Connected to battle server!');
+        // 接続したら、自分のデッキ情報をサーバーに送る
+        newSocket.emit('join-battle-room', { roomId, deck: initialPlayerHand });
+      });
+
+      // サーバーから対戦開始の合図と相手のデッキ情報を受け取る
+      newSocket.on('battle-start', ({ opponentDeck }: { opponentDeck: DeckType }) => {
+        console.log('Battle is starting! Opponent deck received.');
+        setOpponentHand(opponentDeck);
+        // ここでUIに「対戦相手が見つかりました」のような表示を出すことも可能
+      });
+
+      // TODO: Add other event listeners (e.g., card-played, result)
+
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, [isOnline, roomId]);
 
   // カード選択
   const handleCardClick = (card: CardType) => {
@@ -71,32 +112,34 @@ const BattlePage = () => {
   // バトル開始
   const handleBattleStart = () => {
     if (!selectedCard || isBattleInProgress || isResultShown || isGameOver) return;
+    if (isOnline && socket && roomId) {
+      setIsWaiting(true); // 待機中フラグ
+      setPlayerHand(prev => prev.filter(c => c.id !== selectedCard.id));
+      socket.emit('play-card', { roomId, card: selectedCard });
+      return;
+    }
+    // オフライン（AI）モード
     setIsBattleInProgress(true);
     setPlayerCard(selectedCard);
     setPlayerHand(prev => prev.filter(c => c.id !== selectedCard.id));
 
-    // AIカード選択
-    const opponentChoice = opponentHand[Math.floor(Math.random() * opponentHand.length)];
-    setOpponentCard(opponentChoice);
-    setOpponentHand(prev => prev.filter(c => c.id !== opponentChoice.id));
-
     // 画像プリロード
     setIsImageLoading(true);
     const img = new window.Image();
-    img.src = opponentChoice.imageUrl;
+    img.src = selectedCard.imageUrl;
     img.onload = () => {
       setTimeout(() => {
         setIsImageLoading(false);
-        // 3秒間アニメーション
+        // 4秒間アニメーション
         battleTimeout.current = setTimeout(() => {
           // 勝敗判定
-          const result = getJankenResult(selectedCard.hand, opponentChoice.hand);
+          const result = getJankenResult(selectedCard.hand, opponentHand[Math.floor(Math.random() * opponentHand.length)].hand);
           setBattleResult(result);
           setIsResultShown(true);
           if (result === 'win') setPlayerScore(s => s + 1);
           if (result === 'lose') setOpponentScore(s => s + 1);
 
-          // 2秒後に次ラウンド
+          // 1.5秒後に次ラウンド
           resultTimeout.current = setTimeout(() => {
             setPlayerCard(null);
             setOpponentCard(null);
@@ -104,12 +147,47 @@ const BattlePage = () => {
             setIsResultShown(false);
             setIsBattleInProgress(false);
             setSelectedCard(null);
-            if (playerHand.length === 1) setIsGameOver(true);
+            if (playerHand.length === 0) setIsGameOver(true);
           }, 1500);
         }, 4000);
       }, 500); // ここで0.5秒待つ
     };
   };
+
+  // オンライン対戦: battle-resultイベント受信
+  useEffect(() => {
+    if (!isOnline || !socket) return;
+    const onBattleResult = ({ myCard, opponentCard, result }: { myCard: CardType, opponentCard: CardType, result: GameResult }) => {
+      setIsWaiting(false);
+      setIsBattleInProgress(true);
+      setPlayerCard(myCard);
+      setOpponentCard(opponentCard);
+      setOpponentHand(prev => prev.filter(c => c.id !== opponentCard.id));
+      setIsImageLoading(false);
+      // 3秒間アニメーション
+      battleTimeout.current = setTimeout(() => {
+        setBattleResult(result);
+        setIsResultShown(true);
+        if (result === 'win') setPlayerScore(s => s + 1);
+        if (result === 'lose') setOpponentScore(s => s + 1);
+
+        // 1.5秒後に次ラウンド
+        resultTimeout.current = setTimeout(() => {
+          setPlayerCard(null);
+          setOpponentCard(null);
+          setBattleResult(null);
+          setIsResultShown(false);
+          setIsBattleInProgress(false);
+          setSelectedCard(null);
+          if (playerHand.length === 0) setIsGameOver(true);
+        }, 1500);
+      }, 3000);
+    };
+    socket.on('battle-result', onBattleResult);
+    return () => {
+      socket.off('battle-result', onBattleResult);
+    };
+  }, [isOnline, socket, playerHand.length]);
 
   // クリーンアップ
   useEffect(() => {
@@ -153,6 +231,12 @@ const BattlePage = () => {
           <div className="bg-white p-4 rounded-full shadow-xl flex flex-col items-center">
             <div className="text-2xl font-bold">FIGHT!</div>
           </div>
+        </div>
+      )}
+      {/* 待機中表示 */}
+      {isWaiting && (
+        <div className="fixed inset-0 bg-black/20 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-xl font-bold">相手の選択を待っています…</div>
         </div>
       )}
       {/* Opponent Area */}
