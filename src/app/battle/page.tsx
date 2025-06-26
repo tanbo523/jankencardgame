@@ -1,6 +1,8 @@
+export const dynamic = 'force-dynamic';
+
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import Hand from '@/components/Hand';
@@ -355,4 +357,10 @@ const BattlePage = () => {
   );
 };
 
-export default BattlePage; 
+export default function BattlePageWithSuspense() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-xl">Loading...</div>}>
+      <BattlePage />
+    </Suspense>
+  );
+} 
