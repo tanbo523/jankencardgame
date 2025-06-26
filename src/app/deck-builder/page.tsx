@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+
+import React, { useState, useEffect, Suspense } from 'react';
 import Hand from '@/components/Hand';
 import { CardType, DeckType, JankenHand } from '@/types';
 import imageCompression from 'browser-image-compression';
@@ -18,7 +20,7 @@ const createDummyDeck = (): DeckType => {
   }));
 };
 
-export default function DeckBuilderPage() {
+function DeckBuilderPageInner() {
   const [myHand, setMyHand] = useState<DeckType>(createDummyDeck());
   const [editingCard, setEditingCard] = useState<CardType | null>(null);
   const router = useRouter();
@@ -180,5 +182,13 @@ export default function DeckBuilderPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function DeckBuilderPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-xl">Loading...</div>}>
+      <DeckBuilderPageInner />
+    </Suspense>
   );
 } 
