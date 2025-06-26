@@ -105,9 +105,9 @@ const BattlePage = () => {
             setIsBattleInProgress(false);
             setSelectedCard(null);
             if (playerHand.length === 1) setIsGameOver(true);
-          }, 2000);
-        }, 3000);
-      }, 800); // ここで0.8秒待つ
+          }, 1500);
+        }, 4000);
+      }, 500); // ここで0.5秒待つ
     };
   };
 
@@ -151,7 +151,7 @@ const BattlePage = () => {
       {isImageLoading && (
         <div className="fixed inset-0 bg-black/10 flex justify-center items-center z-50">
           <div className="bg-white p-4 rounded-full shadow-xl flex flex-col items-center">
-            <div className="text-2xl font-bold">バトルスタート！</div>
+            <div className="text-2xl font-bold">FIGHT!</div>
           </div>
         </div>
       )}
