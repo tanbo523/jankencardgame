@@ -12,7 +12,7 @@ export default function Home() {
           AIと対戦
         </Link>
         <Link href="/deck-builder" className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-center">
-          オンラインで対戦
+          オンラインで対戦(仮)
         </Link>
       </div>
     </main>

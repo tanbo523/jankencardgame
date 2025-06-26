@@ -1,4 +1,4 @@
-export type JankenHand = 'rock' | 'scissors' | 'paper';
+export type JankenHand = 'fire' | 'water' | 'grass';
 
 export type CardType = {
   id: string;

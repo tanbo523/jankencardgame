@@ -7,8 +7,8 @@ import imageCompression from 'browser-image-compression';
 import { useRouter } from 'next/navigation';
 
 const createDummyDeck = (): DeckType => {
-  const hands: JankenHand[] = ['rock', 'scissors', 'paper'];
-  const moveNames = ['グーパンチ', 'チョキカッター', 'パーアタック'];
+  const hands: JankenHand[] = ['fire', 'water', 'grass'];
+  const moveNames = ['かえんほうしゃ', 'みずでっぽう', 'はっぱカッター'];
   return Array.from({ length: 7 }, (_, i) => ({
     id: `card-${i + 1}`,
     name: `Card ${i + 1}`,
@@ -154,9 +154,9 @@ export default function DeckBuilderPage() {
                   onChange={(e) => setEditingCard({ ...editingCard, hand: e.target.value as JankenHand })}
                   className="w-full border p-2 rounded"
                 >
-                  <option value="rock">✊ グー</option>
-                  <option value="scissors">✌️ チョキ</option>
-                  <option value="paper">✋ パー</option>
+                  <option value="fire">🔥 炎</option>
+                  <option value="water">💧 水</option>
+                  <option value="grass">🌱 草</option>
                 </select>
               </div>
 

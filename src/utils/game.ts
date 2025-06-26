@@ -7,9 +7,9 @@ export const getJankenResult = (playerHand: JankenHand, opponentHand: JankenHand
     return 'draw';
   }
   if (
-    (playerHand === 'rock' && opponentHand === 'scissors') ||
-    (playerHand === 'scissors' && opponentHand === 'paper') ||
-    (playerHand === 'paper' && opponentHand === 'rock')
+    (playerHand === 'water' && opponentHand === 'fire') ||
+    (playerHand === 'fire' && opponentHand === 'grass') ||
+    (playerHand === 'grass' && opponentHand === 'water')
   ) {
     return 'win';
   }

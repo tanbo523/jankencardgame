@@ -2,9 +2,9 @@
 import { CardType, JankenHand } from '@/types';
 
 const handToIcon: Record<JankenHand, string> = {
-  rock: '✊',
-  scissors: '✌️',
-  paper: '✋',
+  fire: '🔥',
+  water: '💧',
+  grass: '🍃',
 };
 
 type Props = {

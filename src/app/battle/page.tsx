@@ -9,14 +9,28 @@ import { CardType, DeckType, JankenHand } from '@/types';
 import { getJankenResult, GameResult } from '@/utils/game';
 import Link from 'next/link';
 
-// 仮のダミーデッキ生成ロジック
+// 属性ごとのモンスター画像ファイル名リスト
+const fireMonsters = ['fire1.png', 'fire2.png', 'fire3.png'];
+const waterMonsters = ['water1.png', 'water2.png', 'water3.png'];
+const grassMonsters = ['grass1.png', 'grass2.png', 'grass3.png'];
+
+const getRandomMonsterImage = (hand: JankenHand): string => {
+  let list: string[] = [];
+  if (hand === 'fire') list = fireMonsters;
+  if (hand === 'water') list = waterMonsters;
+  if (hand === 'grass') list = grassMonsters;
+  const file = list[Math.floor(Math.random() * list.length)];
+  return `/monsters/${hand}/${file}`;
+};
+
+// 仮のダミーデッキ生成ロジック（AI用）
 const createDummyDeck = (): DeckType => {
-  const hands: JankenHand[] = ['rock', 'scissors', 'paper'];
-  const moveNames = ['グーパンチ', 'チョキカッター', 'パーアタック'];
+  const hands: JankenHand[] = ['fire', 'water', 'grass'];
+  const moveNames = ['かえんほうしゃ', 'みずでっぽう', 'はっぱカッター'];
   return Array.from({ length: 7 }, (_, i) => ({
     id: `card-${i + 1}`,
     name: `Card ${i + 1}`,
-    imageUrl: `https://placehold.co/100x140/png?text=Card${i + 1}`,
+    imageUrl: getRandomMonsterImage(hands[i % 3]),
     hand: hands[i % 3],
     moveName: `${moveNames[i % 3]} ${i + 1}`,
   }));
