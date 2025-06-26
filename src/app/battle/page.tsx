@@ -85,27 +85,29 @@ const BattlePage = () => {
     const img = new window.Image();
     img.src = opponentChoice.imageUrl;
     img.onload = () => {
-      setIsImageLoading(false);
-      // 3秒間アニメーション
-      battleTimeout.current = setTimeout(() => {
-        // 勝敗判定
-        const result = getJankenResult(selectedCard.hand, opponentChoice.hand);
-        setBattleResult(result);
-        setIsResultShown(true);
-        if (result === 'win') setPlayerScore(s => s + 1);
-        if (result === 'lose') setOpponentScore(s => s + 1);
+      setTimeout(() => {
+        setIsImageLoading(false);
+        // 3秒間アニメーション
+        battleTimeout.current = setTimeout(() => {
+          // 勝敗判定
+          const result = getJankenResult(selectedCard.hand, opponentChoice.hand);
+          setBattleResult(result);
+          setIsResultShown(true);
+          if (result === 'win') setPlayerScore(s => s + 1);
+          if (result === 'lose') setOpponentScore(s => s + 1);
 
-        // 2秒後に次ラウンド
-        resultTimeout.current = setTimeout(() => {
-          setPlayerCard(null);
-          setOpponentCard(null);
-          setBattleResult(null);
-          setIsResultShown(false);
-          setIsBattleInProgress(false);
-          setSelectedCard(null);
-          if (playerHand.length === 1) setIsGameOver(true);
-        }, 2000);
-      }, 3000);
+          // 2秒後に次ラウンド
+          resultTimeout.current = setTimeout(() => {
+            setPlayerCard(null);
+            setOpponentCard(null);
+            setBattleResult(null);
+            setIsResultShown(false);
+            setIsBattleInProgress(false);
+            setSelectedCard(null);
+            if (playerHand.length === 1) setIsGameOver(true);
+          }, 2000);
+        }, 3000);
+      }, 500); // ここで0.5秒待つ
     };
   };
 
@@ -148,7 +150,9 @@ const BattlePage = () => {
       {/* Loading表示 */}
       {isImageLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl text-2xl font-bold">バトルスタート！</div>
+          <div className="bg-white p-8 rounded-full shadow-xl flex flex-col items-center">
+            <div className="text-2xl font-bold">バトルスタート！</div>
+          </div>
         </div>
       )}
       {/* Opponent Area */}
