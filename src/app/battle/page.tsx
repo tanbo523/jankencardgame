@@ -233,8 +233,7 @@ const BattlePage = () => {
       {/* Player Area */}
       <div className="w-full">
         <h2 className="text-xl font-bold text-center mb-2">Player (Score: {playerScore})</h2>
-        <Hand hand={playerHand} onCardClick={handleCardClick} selectedCardId={selectedCard?.id} />
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center mt-4 mb-4">
           <button
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             onClick={handleBattleStart}
@@ -243,6 +242,8 @@ const BattlePage = () => {
             決定
           </button>
         </div>
+        <Hand hand={playerHand} onCardClick={handleCardClick} selectedCardId={selectedCard?.id} />
+        
       </div>
 
       {/* Game Over Modal */}
