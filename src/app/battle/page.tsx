@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import Hand from '@/components/Hand';
 import Card from '@/components/Card';
@@ -32,7 +32,6 @@ const createDummyDeck = (): DeckType => {
 };
 
 const BattlePage = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // Online mode state
