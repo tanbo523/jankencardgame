@@ -24,3 +24,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes battle-fight {
+  0%, 100% { transform: translateX(0) scale(1); }
+  20% { transform: translateX(-8%) scale(1.04); }
+  40% { transform: translateX(8%) scale(1.04); }
+  60% { transform: translateX(-5%) scale(1.02); }
+  80% { transform: translateX(5%) scale(1.02); }
+}
+
+.animate-battle-fight {
+  animation: battle-fight 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0s 5;
+}
