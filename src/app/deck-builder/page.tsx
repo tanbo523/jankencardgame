@@ -97,7 +97,7 @@ export default function DeckBuilderPage() {
         onClick={handleGoToBattle}
         className="mt-8 bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded text-lg"
       >
-        このデッキで対戦へ進む
+        このデッキで対戦
       </button>
 
       {editingCard && (

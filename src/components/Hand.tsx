@@ -9,9 +9,9 @@ type Props = {
 
 const Hand = ({ hand, onCardClick, selectedCardId }: Props) => {
   return (
-    <div className="flex justify-center flex-wrap -m-1 md:-m-2">
+    <div className="flex justify-center flex-wrap -m-2 md:-m-2 lg:-m-3">
       {hand.map((card) => (
-        <div key={card.id} className="p-1 md:p-2 w-1/4 sm:w-1/5 md:w-[14.28%] lg:w-1/8" style={{ minWidth: '60px', maxWidth: '100px' }}>
+        <div key={card.id} className="p-2 md:p-2 lg:p-3 w-1/2 sm:w-1/4 md:w-1/5 lg:w-1/6" style={{ minWidth: '100px', maxWidth: '140px' }}>
           <Card
             card={card}
             onClick={onCardClick}
