@@ -8,17 +8,10 @@ import CardSlot from '@/components/CardSlot';
 import { CardType, DeckType, JankenHand } from '@/types';
 import { getJankenResult, GameResult } from '@/utils/game';
 import Link from 'next/link';
-
-// 属性ごとのモンスター画像ファイル名リスト
-const fireMonsters = ['fire1.png', 'fire2.png', 'fire3.png'];
-const waterMonsters = ['water1.png', 'water2.png', 'water3.png'];
-const grassMonsters = ['grass1.png', 'grass2.png', 'grass3.png'];
+import { monstersList } from '@/monstersList';
 
 const getRandomMonsterImage = (hand: JankenHand): string => {
-  let list: string[] = [];
-  if (hand === 'fire') list = fireMonsters;
-  if (hand === 'water') list = waterMonsters;
-  if (hand === 'grass') list = grassMonsters;
+  const list = monstersList[hand];
   const file = list[Math.floor(Math.random() * list.length)];
   return `/monsters/${hand}/${file}`;
 };
@@ -50,6 +43,7 @@ const BattlePage = () => {
   const [isGameOver, setIsGameOver] = useState(false);
   const battleTimeout = useRef<NodeJS.Timeout | null>(null);
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [isImageLoading, setIsImageLoading] = useState(false);
 
   // デッキ初期化
   useEffect(() => {
@@ -86,26 +80,33 @@ const BattlePage = () => {
     setOpponentCard(opponentChoice);
     setOpponentHand(prev => prev.filter(c => c.id !== opponentChoice.id));
 
-    // 3秒間アニメーション
-    battleTimeout.current = setTimeout(() => {
-      // 勝敗判定
-      const result = getJankenResult(selectedCard.hand, opponentChoice.hand);
-      setBattleResult(result);
-      setIsResultShown(true);
-      if (result === 'win') setPlayerScore(s => s + 1);
-      if (result === 'lose') setOpponentScore(s => s + 1);
+    // 画像プリロード
+    setIsImageLoading(true);
+    const img = new window.Image();
+    img.src = opponentChoice.imageUrl;
+    img.onload = () => {
+      setIsImageLoading(false);
+      // 3秒間アニメーション
+      battleTimeout.current = setTimeout(() => {
+        // 勝敗判定
+        const result = getJankenResult(selectedCard.hand, opponentChoice.hand);
+        setBattleResult(result);
+        setIsResultShown(true);
+        if (result === 'win') setPlayerScore(s => s + 1);
+        if (result === 'lose') setOpponentScore(s => s + 1);
 
-      // 2秒後に次ラウンド
-      resultTimeout.current = setTimeout(() => {
-        setPlayerCard(null);
-        setOpponentCard(null);
-        setBattleResult(null);
-        setIsResultShown(false);
-        setIsBattleInProgress(false);
-        setSelectedCard(null);
-        if (playerHand.length === 1) setIsGameOver(true);
-      }, 2000);
-    }, 3000);
+        // 2秒後に次ラウンド
+        resultTimeout.current = setTimeout(() => {
+          setPlayerCard(null);
+          setOpponentCard(null);
+          setBattleResult(null);
+          setIsResultShown(false);
+          setIsBattleInProgress(false);
+          setSelectedCard(null);
+          if (playerHand.length === 1) setIsGameOver(true);
+        }, 2000);
+      }, 3000);
+    };
   };
 
   // クリーンアップ
@@ -144,6 +145,12 @@ const BattlePage = () => {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-4 pt-20">
+      {/* Loading表示 */}
+      {isImageLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl text-2xl font-bold">Loading...</div>
+        </div>
+      )}
       {/* Opponent Area */}
       <div className="w-full mb-8">
         <h2 className="text-xl font-bold text-center mb-2">Opponent (Score: {opponentScore})</h2>
