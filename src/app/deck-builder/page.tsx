@@ -156,7 +156,7 @@ export default function DeckBuilderPage() {
                 >
                   <option value="fire">🔥 炎</option>
                   <option value="water">💧 水</option>
-                  <option value="grass">🌱 草</option>
+                  <option value="grass">🍃 草</option>
                 </select>
               </div>
 
