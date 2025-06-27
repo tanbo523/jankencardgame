@@ -57,7 +57,7 @@ const BattlePage = () => {
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
-  const [isHandInitialized, setIsHandInitialized] = useState(false);
+  
 
   useEffect(() => {
     if (!isOnline || !roomId) return;
@@ -93,7 +93,6 @@ const BattlePage = () => {
       initialPlayerHand = createDummyDeck();
       setPlayerHand(initialPlayerHand);
     }
-    setIsHandInitialized(true); // 初期化完了
 
     // 2. Online mode connection
     if (isOnline && roomId) {
