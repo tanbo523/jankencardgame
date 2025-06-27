@@ -20,7 +20,7 @@ const httpServer = createServer((req, res) => {
 const io = new Server(httpServer, {
   cors: {
     origin: ["http://localhost:3000", // Next.jsの開発サーバーのURL
-    "https://jkncgame.netlify.app/" // 本番用
+    "https://jkncgame.netlify.app" // 本番用
     ],
     methods: ["GET", "POST"]
   },
