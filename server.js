@@ -2,7 +2,21 @@
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  // ヘルスチェック用のエンドポイント
+  if (req.url === '/' || req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      status: 'ok', 
+      message: 'Socket.IO server is running',
+      timestamp: new Date().toISOString()
+    }));
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
+});
+
 const io = new Server(httpServer, {
   cors: {
     origin: ["http://localhost:3000", // Next.jsの開発サーバーのURL
