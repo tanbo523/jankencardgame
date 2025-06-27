@@ -117,18 +117,46 @@ io.on('connection', (socket) => {
       const ids = Object.keys(room.round); 
       const card1 = room.round[ids[0]];
       const card2 = room.round[ids[1]];
-      // 勝敗判定ロジック
-      const getResult = (a, b) => {
-        if (a.hand === b.hand) return 'draw';
+      // 勝敗判定ロジック (from src/utils/game.ts)
+      const getResult = (playerHand, opponentHand) => {
+        // 同じタイプの場合：45%勝利, 10%引き分け, 45%敗北
+        if (playerHand === opponentHand) {
+          const rand = Math.random();
+          if (rand < 0.45) return 'win';
+          if (rand < 0.9) return 'lose';
+          return 'draw';
+        }
+
+        const rand = Math.random();
+
+        // プレイヤーが有利な場合：65%勝利, 5%引き分け, 30%敗北
         if (
-          (a.hand === 'fire' && b.hand === 'grass') ||
-          (a.hand === 'water' && b.hand === 'fire') ||
-          (a.hand === 'grass' && b.hand === 'water')
-        ) return 'win';
-        return 'lose';
+          (playerHand === 'water' && opponentHand === 'fire') ||
+          (playerHand === 'fire' && opponentHand === 'grass') ||
+          (playerHand === 'grass' && opponentHand === 'water')
+        ) {
+          if (rand < 0.65) return 'win';
+          if (rand < 0.7) return 'draw';
+          return 'lose';
+        }
+        // プレイヤーが不利な場合：30%勝利, 5%引き分け, 65%敗北
+        else {
+          if (rand < 0.3) return 'win';
+          if (rand < 0.35) return 'draw';
+          return 'lose';
+        }
       };
-      const result1 = getResult(card1, card2);
-      const result2 = getResult(card2, card1);
+      
+      const result1 = getResult(card1.hand, card2.hand);
+      let result2;
+      if (result1 === 'win') {
+        result2 = 'lose';
+      } else if (result1 === 'lose') {
+        result2 = 'win';
+      } else {
+        result2 = 'draw';
+      }
+
       console.log('battle-result送信:', ids[0], result1, ids[1], result2);
       // 結果を両者に送信
       io.to(ids[0]).emit('battle-result', { myCard: card1, opponentCard: card2, result: result1 });
