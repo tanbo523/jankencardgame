@@ -37,7 +37,7 @@ const BattlePage = () => {
   const searchParams = useSearchParams();
 
   // Online mode state
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
   const isOnline = searchParams.get('online') === 'true';
   const roomId = searchParams.get('room');
 
@@ -81,7 +81,7 @@ const BattlePage = () => {
     // 2. Online mode connection
     if (isOnline && roomId) {
       const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL!);
-      setSocket(newSocket);
+      socketRef.current = (newSocket);
 
       newSocket.on('connect', () => {
         console.log('Connected to battle server!');
@@ -113,10 +113,10 @@ const BattlePage = () => {
   // バトル開始
   const handleBattleStart = () => {
     if (!selectedCard || isBattleInProgress || isResultShown || isGameOver) return;
-    if (isOnline && socket && roomId) {
+    if (isOnline && socketRef.current && roomId) {
       setIsWaiting(true); // 待機中フラグ
       setPlayerHand(prev => prev.filter(c => c.id !== selectedCard.id));
-      socket.emit('play-card', { roomId, card: selectedCard });
+      socketRef.current.emit('play-card', { roomId, card: selectedCard });
       return;
     }
     // オフライン（AI）モード
@@ -157,7 +157,7 @@ const BattlePage = () => {
 
   // オンライン対戦: battle-resultイベント受信
   useEffect(() => {
-    if (!isOnline || !socket) return;
+    if (!isOnline || !socketRef.current) return;
     const onBattleResult = ({ myCard, opponentCard, result }: { myCard: CardType, opponentCard: CardType, result: GameResult }) => {
       setIsWaiting(false);
       setIsBattleInProgress(true);
@@ -184,11 +184,11 @@ const BattlePage = () => {
         }, 1500);
       }, 3000);
     };
-    socket.on('battle-result', onBattleResult);
+    socketRef.current.on('battle-result', onBattleResult);
     return () => {
-      socket.off('battle-result', onBattleResult);
+      socketRef.current?.off('battle-result', onBattleResult);
     };
-  }, [isOnline, socket, playerHand.length]);
+  }, [isOnline, playerHand.length]);
 
   // クリーンアップ
   useEffect(() => {

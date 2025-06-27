@@ -96,6 +96,7 @@ io.on('connection', (socket) => {
 
   // カードプレイ受付・勝敗判定
   socket.on('play-card', ({ roomId, card }) => {
+    console.log(`[play-card] from ${socket.id} in room ${roomId}:`, card);
     const room = rooms[roomId];
     if (!room) return;
     if (!room.round) room.round = {};
