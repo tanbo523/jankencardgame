@@ -138,6 +138,11 @@ const BattlePage = () => {
     setPlayerCard(selectedCard);
     setPlayerHand(prev => prev.filter(c => c.id !== selectedCard.id));
 
+    // AIのカードをランダムに選ぶ
+    const aiIndex = Math.floor(Math.random() * opponentHand.length);
+    const aiCard = opponentHand[aiIndex];
+    setOpponentCard(aiCard);
+
     // 画像プリロード
     setIsImageLoading(true);
     const img = new window.Image();
@@ -148,7 +153,7 @@ const BattlePage = () => {
         // 4秒間アニメーション
         battleTimeout.current = setTimeout(() => {
           // 勝敗判定
-          const result = getJankenResult(selectedCard.hand, opponentHand[Math.floor(Math.random() * opponentHand.length)].hand);
+          const result = getJankenResult(selectedCard.hand, aiCard.hand);
           setBattleResult(result);
           setIsResultShown(true);
           if (result === 'win') setPlayerScore(s => s + 1);
@@ -162,6 +167,8 @@ const BattlePage = () => {
             setIsResultShown(false);
             setIsBattleInProgress(false);
             setSelectedCard(null);
+            // AIの手札から使ったカードを除外
+            setOpponentHand(prev => prev.filter((_, i) => i !== aiIndex));
             if (playerHand.length === 0) setIsGameOver(true);
           }, 1500);
         }, 4000);
