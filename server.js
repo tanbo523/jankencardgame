@@ -141,6 +141,10 @@ io.on('connection', (socket) => {
         if (Object.keys(room.players).length === 0) {
           delete rooms[roomId];
         }
+              // 追加: disconnect時にroom.roundからも削除
+      if (room.round && room.round[socket.id]) {
+        delete room.round[socket.id];
+      }
       }
     }
   });
