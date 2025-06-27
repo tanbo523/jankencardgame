@@ -57,6 +57,7 @@ const BattlePage = () => {
   const resultTimeout = useRef<NodeJS.Timeout | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [isHandInitialized, setIsHandInitialized] = useState(false);
 
   useEffect(() => {
     if (!isOnline || !roomId) return;
@@ -92,6 +93,7 @@ const BattlePage = () => {
       initialPlayerHand = createDummyDeck();
       setPlayerHand(initialPlayerHand);
     }
+    setIsHandInitialized(true); // 初期化完了
 
     // 2. Online mode connection
     if (isOnline && roomId) {
@@ -143,6 +145,9 @@ const BattlePage = () => {
     const aiCard = opponentHand[aiIndex];
     setOpponentCard(aiCard);
 
+    // AIの手札から使ったカードを除外
+    setOpponentHand(prev => prev.filter((_, i) => i !== aiIndex));
+
     // 画像プリロード
     setIsImageLoading(true);
     const img = new window.Image();
@@ -167,9 +172,12 @@ const BattlePage = () => {
             setIsResultShown(false);
             setIsBattleInProgress(false);
             setSelectedCard(null);
-            // AIの手札から使ったカードを除外
-            setOpponentHand(prev => prev.filter((_, i) => i !== aiIndex));
-            if (playerHand.length === 0) setIsGameOver(true);
+
+            // 最新のplayerHandを参照して終了判定
+            setPlayerHand(prev => {
+              if (prev.length === 0) setIsGameOver(true);
+              return prev;
+            });
           }, 1500);
         }, 4000);
       }, 500); // ここで0.5秒待つ
