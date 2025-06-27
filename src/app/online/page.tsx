@@ -29,7 +29,7 @@ export default function OnlinePage() {
   }, [router]);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3002');
+    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL!);
     setSocket(newSocket);
 
     const onConnect = () => setStatus(`接続済み (ID: ${newSocket.id})`);
