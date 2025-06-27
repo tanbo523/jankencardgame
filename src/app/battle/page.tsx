@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
+import { getSocket } from '../_socket'; 
 import Hand from '@/components/Hand';
 import Card from '@/components/Card';
 import CardBack from '@/components/CardBack';
@@ -57,6 +58,20 @@ const BattlePage = () => {
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
 
+  useEffect(() => {
+    if (!isOnline || !roomId) return;
+    const socket = getSocket();
+    const handleReconnect = () => {
+      if (playerHand.length > 0) {
+        socket.emit('join-battle-room', { roomId, deck: playerHand });
+      }
+    };
+    socket.on('reconnect', handleReconnect);
+    return () => {
+      socket.off('reconnect', handleReconnect);
+    };
+  }, [isOnline, roomId, playerHand]);
+
   // Deck initialization & Online connection
   useEffect(() => {
     // 1. Deck initialization from localStorage
@@ -80,26 +95,25 @@ const BattlePage = () => {
 
     // 2. Online mode connection
     if (isOnline && roomId) {
-      const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL!);
-      socketRef.current = (newSocket);
+      const newSocket = getSocket();
+      socketRef.current = newSocket;
 
-      newSocket.on('connect', () => {
+      const handleConnect = () => {
         console.log('Connected to battle server!');
-        // 接続したら、自分のデッキ情報をサーバーに送る
         newSocket.emit('join-battle-room', { roomId, deck: initialPlayerHand });
-      });
-
-      // サーバーから対戦開始の合図と相手のデッキ情報を受け取る
-      newSocket.on('battle-start', ({ opponentDeck }: { opponentDeck: DeckType }) => {
+      };
+      const handleBattleStart = ({ opponentDeck }: { opponentDeck: DeckType }) => {
         console.log('Battle is starting! Opponent deck received.');
         setOpponentHand(opponentDeck);
-        // ここでUIに「対戦相手が見つかりました」のような表示を出すことも可能
-      });
+      };
 
-      // TODO: Add other event listeners (e.g., card-played, result)
+      newSocket.on('connect', handleConnect);
+      newSocket.on('battle-start', handleBattleStart);
 
+      // クリーンアップで解除
       return () => {
-        newSocket.disconnect();
+        newSocket.off('connect', handleConnect);
+        newSocket.off('battle-start', handleBattleStart);
       };
     }
   }, [isOnline, roomId]);

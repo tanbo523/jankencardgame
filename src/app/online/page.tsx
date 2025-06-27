@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocket } from '../_socket';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
@@ -12,6 +13,20 @@ export default function OnlinePage() {
   const [inputRoomId, setInputRoomId] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const socket = getSocket();
+    const handleReconnect = () => {
+      if (roomId) {
+        socket.emit('join-room', roomId);
+        // 必要なら setStatus('再接続しました') など
+      }
+    };
+    socket.on('reconnect', handleReconnect);
+    return () => {
+      socket.off('reconnect', handleReconnect);
+    };
+  }, [roomId]);
 
   // ルームIDをrefで管理することで、コールバック内でも最新の値を参照できるようにする
   const roomIdRef = React.useRef(roomId);
@@ -29,7 +44,7 @@ export default function OnlinePage() {
   }, [router]);
 
   useEffect(() => {
-    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL!);
+    const newSocket = getSocket();
     setSocket(newSocket);
 
     const onConnect = () => setStatus(`接続済み (ID: ${newSocket.id})`);
@@ -52,7 +67,6 @@ export default function OnlinePage() {
       newSocket.off('room-created', onRoomCreated);
       newSocket.off('room-error', onRoomError);
       newSocket.off('game-start', handleGameStart);
-      newSocket.disconnect();
     };
   }, [handleGameStart]);
 
