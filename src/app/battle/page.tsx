@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { getSocket } from '../_socket'; 
 import Hand from '@/components/Hand';
 import Card from '@/components/Card';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { getSocket } from '../_socket';
 import { useRouter } from 'next/navigation';
 import React from 'react';
