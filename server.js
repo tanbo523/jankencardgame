@@ -98,12 +98,18 @@ io.on('connection', (socket) => {
   socket.on('play-card', ({ roomId, card }) => {
     console.log(`[play-card] from ${socket.id} in room ${roomId}:`, card);
     const room = rooms[roomId];
-    if (!room) return;
+    if (!room) {
+      console.log(`[play-card] room ${roomId} not found`);
+      return;
+    }
+    
     if (!room.round) room.round = {};
     room.round[socket.id] = card;
 
     //room.roundの中身を表示
-    console.log('room.round:', room.round);
+    console.log(`[play-card] room.round: ${JSON.stringify(room.round)}`);
+    console.log(`[play-card] room.players: ${JSON.stringify(Object.keys(room.players))}`);
+    console.log(`[play-card] Object.keys(room.round).length: ${Object.keys(room.round).length}`);
 
     // 2人揃ったら進行
     if (Object.keys(room.round).length === 2) {
@@ -129,6 +135,9 @@ io.on('connection', (socket) => {
       io.to(ids[1]).emit('battle-result', { myCard: card2, opponentCard: card1, result: result2 });
       // 次ラウンドのためにroom.roundをリセット
       room.round = {};
+      console.log('==> room.round reset for next round');
+    } else {
+      console.log(`==> まだ${Object.keys(room.round).length}人分しか揃っていません`);
     }
   });
 
@@ -137,16 +146,24 @@ io.on('connection', (socket) => {
     // すべてのルームを走査して該当プレイヤーを削除
     for (const roomId in rooms) {
       const room = rooms[roomId];
+      
+      // room.playersから削除
       if (room.players[socket.id]) {
         delete room.players[socket.id];
+        console.log(`disconnect: removed ${socket.id} from room.players`);
+        
         // ルームが空になったら削除
         if (Object.keys(room.players).length === 0) {
           delete rooms[roomId];
+          console.log(`disconnect: room ${roomId} deleted (empty)`);
         }
-              // 追加: disconnect時にroom.roundからも削除
+      }
+      
+      // room.roundからも必ず削除（playersに存在しなくても）
       if (room.round && room.round[socket.id]) {
         delete room.round[socket.id];
-      }
+        console.log(`disconnect: removed ${socket.id} from room.round`);
+        console.log(`disconnect: room.round after: ${JSON.stringify(room.round)}`);
       }
     }
   });
