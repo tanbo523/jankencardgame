@@ -5,7 +5,9 @@ const { Server } = require('socket.io');
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000", // Next.jsの開発サーバーのURL
+    origin: ["http://localhost:3000", // Next.jsの開発サーバーのURL
+    "https://jkncgame.netlify.app/" // 本番用
+    ],
     methods: ["GET", "POST"]
   },
   maxHttpBufferSize: 5e6 // 5MBまで許可
