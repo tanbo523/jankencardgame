@@ -127,7 +127,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = 3002; // Next.jsとは別のポート番号
+const PORT = process.env.PORT || 3002;
 httpServer.listen(PORT, () => {
   console.log(`Socket.IO server running on port ${PORT}`);
 });
