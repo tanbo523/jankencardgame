@@ -107,6 +107,7 @@ io.on('connection', (socket) => {
 
     // 2人揃ったら進行
     if (Object.keys(room.round).length === 2) {
+      console.log('==> 2人分揃ったので勝敗判定に進みます');
       const ids = Object.keys(room.round); 
       const card1 = room.round[ids[0]];
       const card2 = room.round[ids[1]];
@@ -122,6 +123,7 @@ io.on('connection', (socket) => {
       };
       const result1 = getResult(card1, card2);
       const result2 = getResult(card2, card1);
+      console.log('battle-result送信:', ids[0], result1, ids[1], result2);
       // 結果を両者に送信
       io.to(ids[0]).emit('battle-result', { myCard: card1, opponentCard: card2, result: result1 });
       io.to(ids[1]).emit('battle-result', { myCard: card2, opponentCard: card1, result: result2 });
