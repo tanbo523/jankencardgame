@@ -80,7 +80,7 @@ const BattlePage = () => {
 
     // 2. Online mode connection
     if (isOnline && roomId) {
-      const newSocket = io('http://localhost:3002');
+      const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL!);
       setSocket(newSocket);
 
       newSocket.on('connect', () => {
