@@ -102,10 +102,14 @@ io.on('connection', (socket) => {
     if (!room.round) room.round = {};
     room.round[socket.id] = card;
 
-    const playerIds = Object.keys(room.players);
-    if (playerIds.length === 2 && room.round[playerIds[0]] && room.round[playerIds[1]]) {
-      const card1 = room.round[playerIds[0]];
-      const card2 = room.round[playerIds[1]];
+    //room.roundの中身を表示
+    console.log('room.round:', room.round);
+
+    // 2人揃ったら進行
+    if (Object.keys(room.round).length === 2) {
+      const ids = Object.keys(room.round); 
+      const card1 = room.round[ids[0]];
+      const card2 = room.round[ids[1]];
       // 勝敗判定ロジック
       const getResult = (a, b) => {
         if (a.hand === b.hand) return 'draw';
@@ -119,8 +123,8 @@ io.on('connection', (socket) => {
       const result1 = getResult(card1, card2);
       const result2 = getResult(card2, card1);
       // 結果を両者に送信
-      io.to(playerIds[0]).emit('battle-result', { myCard: card1, opponentCard: card2, result: result1 });
-      io.to(playerIds[1]).emit('battle-result', { myCard: card2, opponentCard: card1, result: result2 });
+      io.to(ids[0]).emit('battle-result', { myCard: card1, opponentCard: card2, result: result1 });
+      io.to(ids[1]).emit('battle-result', { myCard: card2, opponentCard: card1, result: result2 });
       // 次ラウンドのためにroom.roundをリセット
       room.round = {};
     }
