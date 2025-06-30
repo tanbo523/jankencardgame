@@ -5,6 +5,7 @@ import { Socket } from 'socket.io-client';
 import { getSocket } from '../_socket';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import { useSound } from '@/hooks/useSound';
 
 export default function OnlinePage() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -13,6 +14,9 @@ export default function OnlinePage() {
   const [inputRoomId, setInputRoomId] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+
+  // 効果音
+  const { playButtonClick } = useSound();
 
   useEffect(() => {
     const socket = getSocket();
@@ -72,12 +76,14 @@ export default function OnlinePage() {
 
   const handleCreateRoom = () => {
     setError('');
+    playButtonClick(); // ボタンクリック音を再生
     socket?.emit('create-room');
   };
 
   const handleJoinRoom = () => {
     setError('');
     if (inputRoomId.trim()) {
+      playButtonClick(); // ボタンクリック音を再生
       const targetRoomId = inputRoomId.trim().toUpperCase();
       setRoomId(targetRoomId); // 参加者が自分のroomIdをセットするために必要
       socket?.emit('join-room', targetRoomId);

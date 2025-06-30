@@ -7,6 +7,7 @@ import Hand from '@/components/Hand';
 import { CardType, DeckType, JankenHand } from '@/types';
 import imageCompression from 'browser-image-compression';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSound } from '@/hooks/useSound';
 
 const createDummyDeck = (): DeckType => {
   const hands: JankenHand[] = ['fire', 'water', 'grass'];
@@ -27,6 +28,9 @@ function DeckBuilderPageInner() {
   const searchParams = useSearchParams();
   const isOnlineMode = searchParams.get('mode') === 'online';
 
+  // 効果音
+  const { playCardSelect, playButtonClick } = useSound();
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('janken_deck');
@@ -45,15 +49,18 @@ function DeckBuilderPageInner() {
 
   const handleCardClick = (card: CardType) => {
     setEditingCard(JSON.parse(JSON.stringify(card))); // Deep copy for editing
+    playCardSelect(); // カード選択音を再生
   };
 
   const handleUpdateCard = () => {
     if (!editingCard) return;
+    playButtonClick(); // ボタンクリック音を再生
     setMyHand(myHand.map(card => card.id === editingCard.id ? editingCard : card));
     setEditingCard(null);
   };
 
   const handleCancelEdit = () => {
+    playButtonClick(); // ボタンクリック音を再生
     setEditingCard(null);
   };
 
@@ -83,6 +90,7 @@ function DeckBuilderPageInner() {
   };
 
   const handleGoToBattle = () => {
+    playButtonClick(); // ボタンクリック音を再生
     if (typeof window !== 'undefined') {
       localStorage.setItem('janken_deck', JSON.stringify(myHand));
     }

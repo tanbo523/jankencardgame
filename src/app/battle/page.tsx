@@ -14,6 +14,7 @@ import { CardType, DeckType, JankenHand } from '@/types';
 import { getJankenResult, GameResult } from '@/utils/game';
 import Link from 'next/link';
 import { monstersList } from '@/monstersList';
+import { useSound } from '@/hooks/useSound';
 
 const getRandomMonsterImage = (hand: JankenHand): string => {
   const list = monstersList[hand];
@@ -41,6 +42,19 @@ const BattlePage = () => {
   const socketRef = useRef<Socket | null>(null);
   const isOnline = searchParams.get('online') === 'true';
   const roomId = searchParams.get('room');
+
+  // 効果音
+  const { 
+    playCardSelect, 
+    playButtonClick, 
+    playBattleFight,
+    playBattleWin,
+    playBattleLose,
+    playBattleDraw,
+    playFinalWin,
+    playFinalLose,
+    playFinalDraw
+  } = useSound();
 
   const [playerHand, setPlayerHand] = useState<DeckType>([]);
   const [opponentHand, setOpponentHand] = useState<DeckType>(createDummyDeck());
@@ -123,11 +137,13 @@ const BattlePage = () => {
   const handleCardClick = (card: CardType) => {
     if (isBattleInProgress || isResultShown || isGameOver) return;
     setSelectedCard(card);
+    playCardSelect(); // カード選択音を再生
   };
 
   // バトル開始
   const handleBattleStart = () => {
     if (!selectedCard || isBattleInProgress || isResultShown || isGameOver) return;
+    playButtonClick(); // 決定ボタン音を再生
     if (isOnline && socketRef.current && roomId) {
       setIsWaiting(true); // 待機中フラグ
       setPlayerHand(prev => prev.filter(c => c.id !== selectedCard.id));
@@ -154,14 +170,24 @@ const BattlePage = () => {
     img.onload = () => {
       setTimeout(() => {
         setIsImageLoading(false);
+        playBattleFight(); // ここで戦闘音を再生
         // 4秒間アニメーション
         battleTimeout.current = setTimeout(() => {
           // 勝敗判定
           const result = getJankenResult(selectedCard.hand, aiCard.hand);
           setBattleResult(result);
           setIsResultShown(true);
-          if (result === 'win') setPlayerScore(s => s + 1);
-          if (result === 'lose') setOpponentScore(s => s + 1);
+          
+          // バトル結果音を再生
+          if (result === 'win') {
+            setPlayerScore(s => s + 1);
+            playBattleWin();
+          } else if (result === 'lose') {
+            setOpponentScore(s => s + 1);
+            playBattleLose();
+          } else {
+            playBattleDraw();
+          }
 
           // 1.5秒後に次ラウンド
           resultTimeout.current = setTimeout(() => {
@@ -171,10 +197,19 @@ const BattlePage = () => {
             setIsResultShown(false);
             setIsBattleInProgress(false);
             setSelectedCard(null);
-
             // 最新のplayerHandを参照して終了判定
             setPlayerHand(prev => {
-              if (prev.length === 0) setIsGameOver(true);
+              if (prev.length === 0) {
+                setIsGameOver(true);
+                // 最終結果音を再生
+                if (playerScore + (result === 'win' ? 1 : 0) > opponentScore + (result === 'lose' ? 1 : 0)) {
+                  playFinalWin();
+                } else if (playerScore + (result === 'win' ? 1 : 0) < opponentScore + (result === 'lose' ? 1 : 0)) {
+                  playFinalLose();
+                } else {
+                  playFinalDraw();
+                }
+              }
               return prev;
             });
           }, 1500);
@@ -187,18 +222,29 @@ const BattlePage = () => {
   useEffect(() => {
     if (!isOnline || !socketRef.current) return;
     const onBattleResult = ({ myCard, opponentCard, result }: { myCard: CardType, opponentCard: CardType, result: GameResult }) => {
+      playBattleFight(); // ここで戦闘音を再生
       setIsWaiting(false);
       setIsBattleInProgress(true);
       setPlayerCard(myCard);
       setOpponentCard(opponentCard);
       setOpponentHand(prev => prev.filter(c => c.id !== opponentCard.id));
       setIsImageLoading(false);
-      // 3秒間アニメーション
+   
+      // 4秒間アニメーション
       battleTimeout.current = setTimeout(() => {
         setBattleResult(result);
         setIsResultShown(true);
-        if (result === 'win') setPlayerScore(s => s + 1);
-        if (result === 'lose') setOpponentScore(s => s + 1);
+        
+        // バトル結果音を再生
+        if (result === 'win') {
+          setPlayerScore(s => s + 1);
+          playBattleWin();
+        } else if (result === 'lose') {
+          setOpponentScore(s => s + 1);
+          playBattleLose();
+        } else {
+          playBattleDraw();
+        }
 
         // 1.5秒後に次ラウンド
         resultTimeout.current = setTimeout(() => {
@@ -208,9 +254,19 @@ const BattlePage = () => {
           setIsResultShown(false);
           setIsBattleInProgress(false);
           setSelectedCard(null);
-          if (playerHand.length === 0) setIsGameOver(true);
+          if (playerHand.length === 0) {
+            setIsGameOver(true);
+            // 最終結果音を再生
+            if (playerScore + (result === 'win' ? 1 : 0) > opponentScore + (result === 'lose' ? 1 : 0)) {
+              playFinalWin();
+            } else if (playerScore + (result === 'win' ? 1 : 0) < opponentScore + (result === 'lose' ? 1 : 0)) {
+              playFinalLose();
+            } else {
+              playFinalDraw();
+            }
+          }
         }, 1500);
-      }, 3000);
+      }, 4000);
     };
     socketRef.current.on('battle-result', onBattleResult);
     return () => {
@@ -375,7 +431,11 @@ const BattlePage = () => {
             </div>
             <p className="text-2xl mb-6">{getFinalMessage()}</p>
             <p className="text-lg mb-6">あなた {playerScore}勝 - {opponentScore}勝 相手</p>
-            <Link href="/" className="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            <Link 
+              href="/" 
+              onClick={playButtonClick}
+              className="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            >
               メニューに戻る
             </Link>
           </div>
