@@ -1,6 +1,8 @@
 // server.js
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const sharp = require('sharp');
+const sanitizeHtml = require('sanitize-html');
 
 const httpServer = createServer((req, res) => {
   // ヘルスチェック用のエンドポイント
@@ -28,6 +30,81 @@ const io = new Server(httpServer, {
 });
 
 const rooms = {};
+
+// セキュリティ設定
+const MAX_DECK_SIZE = 7;
+const MAX_NAME_LENGTH = 30;
+const MAX_MOVE_NAME_LENGTH = 30;
+const MAX_IMAGE_URL_LENGTH = 500 * 1024; // 500KB
+
+// デッキデータのバリデーション関数
+const validateDeck = (deck) => {
+  if (!Array.isArray(deck) || deck.length > MAX_DECK_SIZE) { // デッキの最大枚数チェック
+    console.warn('Validation failed: Deck is not a valid array or exceeds max size.');
+    return false;
+  }
+  for (const card of deck) {
+    if (typeof card !== 'object' || card === null) {
+      console.warn('Validation failed: Card is not a valid object.');
+      return false;
+    }
+
+    const { id, name, imageUrl, hand, moveName } = card;
+
+    if (typeof id !== 'string' || 
+        typeof name !== 'string' || name.length > MAX_NAME_LENGTH ||
+        typeof moveName !== 'string' || moveName.length > MAX_MOVE_NAME_LENGTH) {
+      console.warn('Validation failed: Invalid card properties type or length.');
+      return false;
+    }
+    
+    if (!['fire', 'water', 'grass'].includes(hand)) {
+      console.warn('Validation failed: Invalid hand type.');
+      return false;
+    }
+
+    if (typeof imageUrl !== 'string' || !imageUrl.startsWith('data:image/') || imageUrl.length > MAX_IMAGE_URL_LENGTH) {
+      console.warn('Validation failed: Invalid imageUrl format or size.');
+      return false;
+    }
+  }
+  return true;
+};
+
+// デッキデータのサニタイズと画像処理を行う関数
+const sanitizeAndProcessDeck = async (deck) => {
+  const sanitizedDeck = [];
+  for (const card of deck) {
+    const sanitizedCard = { ...card };
+
+    // XSS対策: テキスト入力からHTMLタグを除去
+    const sanitizeOptions = { allowedTags: [], allowedAttributes: {} };
+    sanitizedCard.name = sanitizeHtml(card.name, sanitizeOptions);
+    sanitizedCard.moveName = sanitizeHtml(card.moveName, sanitizeOptions);
+
+    // XSS/DoS対策: 画像を再処理して安全な形式に変換
+    try {
+      const base64Data = card.imageUrl.split(';base64,').pop();
+      if (!base64Data) throw new Error('Invalid base64 string');
+      
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      const processedImageBuffer = await sharp(imageBuffer)
+        .resize(200, 280, { fit: 'inside', withoutEnlargement: true }) // 過度に大きい画像をリサイズ
+        .webp({ quality: 80 }) // WebP形式に変換して軽量化
+        .toBuffer();
+
+      sanitizedCard.imageUrl = `data:image/webp;base64,${processedImageBuffer.toString('base64')}`;
+    } catch (error) {
+      console.error('Image processing failed for a card:', error);
+      // エラーが発生した場合、このカードの処理を中断し、デッキ全体を無効とする
+      throw new Error(`Failed to process image for card: ${card.name}`);
+    }
+
+    sanitizedDeck.push(sanitizedCard);
+  }
+  return sanitizedDeck;
+};
 
 // 4桁のランダムなルームIDを生成
 const generateRoomId = () => {
@@ -67,30 +144,56 @@ io.on('connection', (socket) => {
   });
 
   // バトルルームへの参加とデッキ情報の交換（/battleページ用）
-  socket.on('join-battle-room', ({ roomId, deck }) => {
+  socket.on('join-battle-room', async ({ roomId, deck }) => {
+    // === 1. バリデーション処理 ===
+    if (!validateDeck(deck)) {
+      console.error(`Invalid deck data received from socket ${socket.id}. Disconnecting.`);
+      // 不正なデータを送ってきたクライアントは切断するなどの対応
+      socket.disconnect();
+      return;
+    }
+    
     const room = rooms[roomId];
-    // ルームが存在する場合は必ず自分のエントリを作る
-    if (room) {
-      if (!room.players[socket.id]) {
-        room.players[socket.id] = {};
-      }
-      room.players[socket.id].deck = deck;
-      console.log(`Player ${socket.id} in room ${roomId} submitted their deck.`);
+    // ルームが存在し、かつ、このソケットがそのルームのプレイヤーであることを確認
+    if (!room || !room.players[socket.id]) {
+      console.warn(`[join-battle-room] Unauthorized attempt by ${socket.id} for room ${roomId}`);
+      socket.emit('room-error', '不正な操作、またはルームの有効期限が切れました。');
+      socket.disconnect();
+      return;
+    }
 
-      const playerIds = Object.keys(room.players);
-      // 2人揃っているか確認
-      if (playerIds.length === 2) {
-        const player1 = room.players[playerIds[0]];
-        const player2 = room.players[playerIds[1]];
+    try {
+      // === 2. サニタイズと画像処理 ===
+      const sanitizedDeck = await sanitizeAndProcessDeck(deck);
 
-        // 2人ともデッキ情報を送信済みか確認
-        if (player1.deck && player2.deck) {
-          console.log(`Both players in room ${roomId} are ready. Starting battle.`);
-          // 各プレイヤーに相手のデッキ情報を送信
-          io.to(playerIds[0]).emit('battle-start', { opponentDeck: player2.deck });
-          io.to(playerIds[1]).emit('battle-start', { opponentDeck: player1.deck });
+      // ルームが存在する場合は必ず自分のエントリを作る
+      if (room) {
+        if (!room.players[socket.id]) {
+          room.players[socket.id] = {};
+        }
+        room.players[socket.id].deck = sanitizedDeck; // サニタイズ済みのデッキを保存
+        console.log(`Player ${socket.id} in room ${roomId} submitted their sanitized deck.`);
+
+        const playerIds = Object.keys(room.players);
+        // 2人揃っているか確認
+        if (playerIds.length === 2) {
+          const player1 = room.players[playerIds[0]];
+          const player2 = room.players[playerIds[1]];
+
+          // 2人ともデッキ情報を送信済みか確認
+          if (player1.deck && player2.deck) {
+            console.log(`Both players in room ${roomId} are ready. Starting battle.`);
+            // 各プレイヤーに相手のデッキ情報を送信
+            io.to(playerIds[0]).emit('battle-start', { opponentDeck: player2.deck });
+            io.to(playerIds[1]).emit('battle-start', { opponentDeck: player1.deck });
+          }
         }
       }
+    } catch (error) {
+      console.error(`Deck processing failed for socket ${socket.id}:`, error.message);
+      socket.emit('room-error', 'デッキの処理中にエラーが発生しました。カード画像が破損しているか、不正なデータである可能性があります。');
+      socket.disconnect();
+      return;
     }
   });
 
