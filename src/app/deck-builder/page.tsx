@@ -11,7 +11,7 @@ import { useSound } from '@/hooks/useSound';
 
 const createDummyDeck = (): DeckType => {
   const hands: JankenHand[] = ['fire', 'water', 'grass'];
-  const moveNames = ['かえんほうしゃ', 'みずでっぽう', 'はっぱカッター'];
+  const moveNames = ['Fire-arrow', 'Water-arrow', 'Grass-arrow'];
   return Array.from({ length: 7 }, (_, i) => ({
     id: `card-${i + 1}`,
     name: `Card ${i + 1}`,
@@ -129,7 +129,7 @@ function DeckBuilderPageInner() {
                   value={editingCard.name}
                   onChange={(e) => setEditingCard({ ...editingCard, name: e.target.value })}
                   className="w-full border p-2 rounded"
-                  placeholder="例：リザードン"
+                  placeholder="例：ティラノザウルス"
                 />
               </div>
 
@@ -158,21 +158,21 @@ function DeckBuilderPageInner() {
                   value={editingCard.moveName}
                   onChange={(e) => setEditingCard({ ...editingCard, moveName: e.target.value })}
                   className="w-full border p-2 rounded"
-                  placeholder="例：ストーンエッジ"
+                  placeholder="例：グーパンチ"
                 />
               </div>
 
               {/* Hand Type */}
               <div>
-                <label className="block mb-1 font-bold text-gray-700">属性</label>
+                <label className="block mb-1 font-bold text-gray-700">種類</label>
                 <select
                   value={editingCard.hand}
                   onChange={(e) => setEditingCard({ ...editingCard, hand: e.target.value as JankenHand })}
                   className="w-full border p-2 rounded"
                 >
-                  <option value="fire">🔥 炎</option>
-                  <option value="water">💧 水</option>
-                  <option value="grass">🍃 草</option>
+                  <option value="fire">🔥</option>
+                  <option value="water">💧</option>
+                  <option value="grass">🍃</option>
                 </select>
               </div>
 

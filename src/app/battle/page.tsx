@@ -25,7 +25,7 @@ const getRandomMonsterImage = (hand: JankenHand): string => {
 // 仮のダミーデッキ生成ロジック（AI用）
 const createDummyDeck = (): DeckType => {
   const hands: JankenHand[] = ['fire', 'water', 'grass'];
-  const moveNames = ['かえんほうしゃ', 'みずでっぽう', 'はっぱカッター'];
+  const moveNames = ['Fire-arrow', 'Water-arrow', 'Grass-arrow'];
   return Array.from({ length: 7 }, (_, i) => ({
     id: `card-${i + 1}`,
     name: `Card ${i + 1}`,
@@ -213,7 +213,7 @@ const BattlePage = () => {
               return prev;
             });
           }, 1500);
-        }, 4000);
+        }, 4500);
       }, 500); // ここで0.5秒待つ
     };
   };
@@ -266,7 +266,7 @@ const BattlePage = () => {
             }
           }
         }, 1500);
-      }, 4000);
+      }, 4500);
     };
     socketRef.current.on('battle-result', onBattleResult);
     return () => {
